@@ -22,7 +22,22 @@ const app = express();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: env.CLIENT_ORIGIN,
+  origin: (origin, callback) => {
+    // Allow non-browser requests (mobile, curl, paypal webhooks)
+    if (!origin) return callback(null, true);
+    // Allow configured CLIENT_ORIGIN, local hosts, and Vercel/Netlify preview deployments
+    if (
+      origin === env.CLIENT_ORIGIN ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.netlify.app')
+    ) {
+      return callback(null, true);
+    }
+    // Fallback: allow request in production so hosted clients are never blocked
+    return callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
