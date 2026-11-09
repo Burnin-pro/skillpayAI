@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
+    "build": "echo Server build ready",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node scripts/seed.js",
