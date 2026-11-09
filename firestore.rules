@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // DENY ALL direct client reads/writes.
+    // The client never talks to Firestore directly; every operation goes through the API with the Admin SDK.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build Output
+dist/
+build/
+*/dist/
+*/build/
+dist-ssr/
+*.local
+
+# Environment Variables & Secrets (NEVER COMMIT REAL SECRETS)
+.env
+.env.*
+!.env.example
+!*/.env.example
+*.env
+
+# Credentials & Sensitive Files
+credentials.txt
+*.key
+*.pem
+*.p8
+*.p12
+*firebase-adminsdk*.json
+*serviceAccount*.json
+*service-account*.json
+credentials.json
+client_secret*.json
+
+# Firebase Cache & Emulators Logs
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+
+# Logs & Diagnostics
+logs/
+*.log
+
+# Editor & OS Files
+.vscode/
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+
+# Temporary cache
+.eslintcache
+.turbo/
+.cache/

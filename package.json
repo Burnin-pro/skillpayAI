@@ -1,0 +1,14 @@
+{
+  "name": "skillpay-root",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\" \"firebase emulators:start --only auth,firestore\"",
+    "install:all": "npm install && npm install --prefix client && npm install --prefix server",
+    "seed": "npm run seed --prefix server",
+    "test:server": "npm run test --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "firebase-tools": "^13.11.2"
+  }
+}
