@@ -24,6 +24,10 @@ dist-ssr/
 
 # Credentials & Sensitive Files
 credentials.txt
+*.env.txt
+env_*.txt
+vercel_*.txt
+*.secrets.txt
 *.key
 *.pem
 *.p8
