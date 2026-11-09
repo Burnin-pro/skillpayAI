@@ -52,6 +52,16 @@ app.use(pinoHttp({
   autoLogging: env.NODE_ENV !== 'test'
 }));
 
+// Root & Health check
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'SkillPay AI Escrow & Deal Room API',
+    version: '1.0.0',
+    health: '/api/v1/health'
+  });
+});
+
 // Routes
 app.use('/api/v1/health', healthRoutes);
 app.use('/api/v1/auth', authRoutes);
