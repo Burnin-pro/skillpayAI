@@ -4,11 +4,11 @@ import { GlassCard } from '../components/common/GlassCard';
 import { Button } from '../components/common/Button';
 import { DealMeter } from '../components/marketplace/DealMeter';
 import { AIBadge } from '../components/ai/AIBadge';
-import { Shield, CheckCircle2, Send, Bot, Sparkles, ArrowRight, FileText, X } from 'lucide-react';
+import { Shield, CheckCircle2, Send, Bot, Sparkles, ArrowRight, FileText, X, RotateCcw } from 'lucide-react';
 import { useJourney } from '../context/JourneyContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
-import { doc, collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { doc, collection, onSnapshot, query, orderBy, getDocs, writeBatch, setDoc } from 'firebase/firestore';
 import { apiClient } from '../services/apiClient';
 import { api } from '../services/api';
 
@@ -75,11 +75,31 @@ export function DealRoom() {
     }
   }, [negotiationId]);
 
-  // Restore previous deal state from localStorage if user navigated to Proposal and back
+  // Helper to verify if a deal belongs to the currently active project
+  const isDealForActiveProject = (deal) => {
+    if (!deal) return false;
+    if (deal.paid || deal.status === 'ordered') return false;
+    if (deal.projectTitle && activeProject?.title && deal.projectTitle !== activeProject.title) return false;
+    if (deal.messages && deal.messages.length > 0) {
+      const firstMsgText = deal.messages[0]?.text || '';
+      if (activeProject?.title && firstMsgText && !firstMsgText.includes(activeProject.title)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Restore previous deal state from localStorage only if it belongs to the active project
   const savedDeal = (() => {
     try {
       const s = localStorage.getItem(`skillpay_deal_${negotiationId}`);
-      return s ? JSON.parse(s) : null;
+      if (!s) return null;
+      const parsed = JSON.parse(s);
+      if (!isDealForActiveProject(parsed)) {
+        localStorage.removeItem(`skillpay_deal_${negotiationId}`);
+        return null;
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -105,6 +125,75 @@ export function DealRoom() {
   const [counteringOfferId, setCounteringOfferId] = useState(null);
   const [counterAmount, setCounterAmount] = useState(initialAi);
   const [counterDays, setCounterDays] = useState(activeProject.deadlineDays || 4);
+
+  // Start fresh deal room negotiation for current active project
+  const handleResetDeal = async () => {
+    try {
+      localStorage.removeItem(`skillpay_deal_${negotiationId}`);
+    } catch {}
+
+    const freshCust = Math.round((baseBudget * 0.75) / 5) * 5;
+    const freshProv = baseBudget;
+    const freshAi = Math.round((baseBudget * 0.85) / 5) * 5;
+
+    setCustomerOffer(freshCust);
+    setProviderAsk(freshProv);
+    setAiSuggestion(freshAi);
+    setAgreementReached(false);
+
+    const freshMsgs = [
+      { id: `msg-welcome-${Date.now()}`, sender: 'ai', text: `Welcome to the AI Deal Room for ${activeProject.title}. I am here to help you reach a fair agreement.` },
+      { id: `msg-init-cust-${Date.now()}`, sender: 'customer', type: 'offer', amount: freshCust, delivery: activeProject.deadlineDays || 4, revisions: 1, text: `I offer $${freshCust} for ${activeProject.title}.` },
+      { id: `msg-init-prov-${Date.now()}`, sender: 'provider', type: 'offer', amount: freshProv, delivery: Math.max(2, (activeProject.deadlineDays || 4) - 1), revisions: 2, text: `I can deliver this in ${Math.max(2, (activeProject.deadlineDays || 4) - 1)} days with 2 revisions for $${freshProv}.` }
+    ];
+    setMessages(freshMsgs);
+
+    try {
+      localStorage.setItem(`skillpay_deal_${negotiationId}`, JSON.stringify({
+        projectTitle: activeProject.title,
+        messages: freshMsgs,
+        customerOffer: freshCust,
+        providerAsk: freshProv,
+        aiSuggestion: freshAi,
+        agreementReached: false,
+        providerId: activeProvider.id,
+        providerName: activeProvider.name,
+        providerAvatar: activeProvider.avatar,
+        customerId: user?.uid || user?.id,
+        customerName: user?.name,
+        customerEmail: user?.email
+      }));
+    } catch {}
+
+    if (negotiationId) {
+      try {
+        await setDoc(doc(db, 'negotiations', negotiationId), {
+          jobId: activeProject.id || 'job_demo',
+          projectTitle: activeProject.title,
+          customerId: user?.uid || user?.id || 'client',
+          providerId: activeProvider.id || negotiationId,
+          status: 'active',
+          customerOffer: freshCust,
+          providerAsk: freshProv,
+          aiSuggestion: freshAi,
+          updatedAt: new Date().toISOString()
+        });
+
+        const oldDocs = await getDocs(collection(db, 'negotiations', negotiationId, 'messages'));
+        const batch = writeBatch(db);
+        oldDocs.docs.forEach(d => batch.delete(d.ref));
+        const welcomeDoc = doc(collection(db, 'negotiations', negotiationId, 'messages'));
+        batch.set(welcomeDoc, {
+          sender: 'ai',
+          text: `Welcome to the AI Deal Room for ${activeProject.title}. I am here to help you reach a fair agreement.`,
+          createdAt: new Date().toISOString()
+        });
+        await batch.commit();
+      } catch (err) {
+        console.warn("Firestore reset notice:", err);
+      }
+    }
+  };
 
   // Ensure scroll lands fully at bottom or agreement
   const scrollToView = (smooth = true) => {
@@ -135,6 +224,7 @@ export function DealRoom() {
     if (!negotiationId) return;
     try {
       localStorage.setItem(`skillpay_deal_${negotiationId}`, JSON.stringify({
+        projectTitle: activeProject.title,
         messages,
         customerOffer,
         providerAsk,
@@ -148,8 +238,9 @@ export function DealRoom() {
         customerEmail: user?.email
       }));
     } catch {}
-  }, [messages, customerOffer, providerAsk, aiSuggestion, agreementReached, negotiationId, activeProvider, user]);
+  }, [messages, customerOffer, providerAsk, aiSuggestion, agreementReached, negotiationId, activeProvider, user, activeProject.title]);
 
+  // Firestore sync with project reconciliation
   useEffect(() => {
     if (!negotiationId) return;
 
@@ -157,6 +248,13 @@ export function DealRoom() {
       const unsubNeg = onSnapshot(doc(db, 'negotiations', negotiationId), (snap) => {
         if (snap.exists()) {
           const data = snap.data();
+          // If Firestore document belongs to an older/different project or past ordered job, ignore
+          if (data.projectTitle && activeProject?.title && data.projectTitle !== activeProject.title) {
+            return;
+          }
+          if (data.status === 'ordered' || data.paid) {
+            return;
+          }
           if (data.customerOffer) setCustomerOffer(data.customerOffer);
           if (data.providerAsk) setProviderAsk(data.providerAsk);
           if (data.aiSuggestion) setAiSuggestion(data.aiSuggestion);
@@ -170,6 +268,13 @@ export function DealRoom() {
       const unsubMsgs = onSnapshot(q, (snap) => {
         if (snap.docs.length > 0) {
           const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          // Verify messages belong to active project
+          const firstMsg = msgs[0]?.text || '';
+          if (activeProject?.title && firstMsg && !firstMsg.includes(activeProject.title)) {
+            // Belongs to prior project - trigger auto reset
+            handleResetDeal();
+            return;
+          }
           setMessages(msgs);
         }
       }, (err) => {
@@ -183,7 +288,18 @@ export function DealRoom() {
     } catch (err) {
       console.warn("Firestore listener init notice:", err);
     }
-  }, [negotiationId]);
+  }, [negotiationId, activeProject?.title]);
+
+  // Auto-detect project scope mismatch on initial mount
+  useEffect(() => {
+    if (!activeProject?.title) return;
+    if (messages && messages.length > 0) {
+      const firstText = messages[0]?.text || '';
+      if (firstText && !firstText.includes(activeProject.title)) {
+        handleResetDeal();
+      }
+    }
+  }, [activeProject?.title]);
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -438,7 +554,16 @@ export function DealRoom() {
           <h2 className="font-heading font-bold text-lg flex items-center gap-2">
             Negotiation Timeline
           </h2>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleResetDeal}
+              className="px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-ink hover:bg-surface-elevated rounded-lg border border-border-subtle flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              title="Start a fresh negotiation for this project"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-primary" />
+              <span>Start New Deal</span>
+            </button>
             {!agreementReached && (
               <Button size="sm" variant="secondary" onClick={handleMediate} isLoading={isAiTyping}>
                 Suggest Compromise
@@ -510,6 +635,16 @@ export function DealRoom() {
                         <span>Proceed to Checkout</span>
                         <ArrowRight className="w-4 h-4" />
                       </Button>
+                    </div>
+
+                    <div className="flex justify-center pt-2">
+                      <button
+                        type="button"
+                        onClick={handleResetDeal}
+                        className="text-xs text-muted hover:text-primary underline flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Negotiating a new project with {activeProvider.name}? Start Fresh Deal
+                      </button>
                     </div>
                   </GlassCard>
                 </div>
