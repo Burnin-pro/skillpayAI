@@ -49,7 +49,7 @@ export function DealRoom() {
     try {
       const saved = localStorage.getItem(`skillpay_provider_profile_${negotiationId}`);
       if (saved) return JSON.parse(saved);
-    } catch {}
+    } catch { }
     return {
       id: negotiationId || 'provider',
       name: 'Verified Freelancer',
@@ -71,7 +71,7 @@ export function DealRoom() {
             title: prov.headline || 'Full-Stack Developer'
           });
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [negotiationId]);
 
@@ -109,13 +109,13 @@ export function DealRoom() {
   const [customerOffer, setCustomerOffer] = useState(savedDeal ? savedDeal.customerOffer : initialCustOffer);
   const [providerAsk, setProviderAsk] = useState(savedDeal ? savedDeal.providerAsk : initialProvAsk);
   const [aiSuggestion, setAiSuggestion] = useState(savedDeal ? savedDeal.aiSuggestion : initialAi);
-  
+
   const [messages, setMessages] = useState(savedDeal?.messages || [
     { id: 'msg-welcome', sender: 'ai', text: `Welcome to the AI Deal Room for ${activeProject.title}. I am here to help you reach a fair agreement.` },
     { id: 'msg-init-cust', sender: 'customer', type: 'offer', amount: initialCustOffer, delivery: activeProject.deadlineDays || 4, revisions: 1, text: `I offer $${initialCustOffer} for ${activeProject.title}.` },
     { id: 'msg-init-prov', sender: 'provider', type: 'offer', amount: initialProvAsk, delivery: Math.max(2, (activeProject.deadlineDays || 4) - 1), revisions: 2, text: `I can deliver this in ${Math.max(2, (activeProject.deadlineDays || 4) - 1)} days with 2 revisions for $${initialProvAsk}.` }
   ]);
-  
+
   const [inputText, setInputText] = useState('');
   const [providerAgentEnabled, setProviderAgentEnabled] = useState(true);
   const [isAiTyping, setIsAiTyping] = useState(false);
@@ -130,7 +130,7 @@ export function DealRoom() {
   const handleResetDeal = async () => {
     try {
       localStorage.removeItem(`skillpay_deal_${negotiationId}`);
-    } catch {}
+    } catch { }
 
     const freshCust = Math.round((baseBudget * 0.75) / 5) * 5;
     const freshProv = baseBudget;
@@ -163,7 +163,7 @@ export function DealRoom() {
         customerName: user?.name,
         customerEmail: user?.email
       }));
-    } catch {}
+    } catch { }
 
     if (negotiationId) {
       try {
@@ -237,7 +237,7 @@ export function DealRoom() {
         customerName: user?.name,
         customerEmail: user?.email
       }));
-    } catch {}
+    } catch { }
   }, [messages, customerOffer, providerAsk, aiSuggestion, agreementReached, negotiationId, activeProvider, user, activeProject.title]);
 
   // Firestore sync with project reconciliation
@@ -322,14 +322,14 @@ export function DealRoom() {
 
   const handleQuickOffer = async (amount) => {
     setCounteringOfferId(null);
-    const newMsg = { 
-      id: `offer-${Date.now()}`, 
-      sender: 'customer', 
-      type: 'offer', 
-      amount, 
-      delivery: activeProject.deadlineDays || 4, 
-      revisions: 2, 
-      text: `I offer $${amount}` 
+    const newMsg = {
+      id: `offer-${Date.now()}`,
+      sender: 'customer',
+      type: 'offer',
+      amount,
+      delivery: activeProject.deadlineDays || 4,
+      revisions: 2,
+      text: `I offer $${amount}`
     };
     setMessages(prev => [...prev, newMsg]);
     setCustomerOffer(amount);
@@ -339,8 +339,8 @@ export function DealRoom() {
     }
 
     try {
-      await apiClient.post(`/negotiations/${negotiationId}/messages`, { 
-        type: 'offer', amount, delivery: activeProject.deadlineDays || 4, revisions: 2, text: `I offer $${amount}` 
+      await apiClient.post(`/negotiations/${negotiationId}/messages`, {
+        type: 'offer', amount, delivery: activeProject.deadlineDays || 4, revisions: 2, text: `I offer $${amount}`
       });
     } catch (err) {
       console.warn("Backend offer sync notice:", err.message);
@@ -359,14 +359,14 @@ export function DealRoom() {
     const delivery = Number(counterDays);
     setCounteringOfferId(null);
 
-    const newMsg = { 
-      id: `counter-${Date.now()}`, 
-      sender: 'customer', 
-      type: 'offer', 
-      amount, 
-      delivery, 
-      revisions: 2, 
-      text: `I would like to counter with $${amount} and ${delivery} days delivery.` 
+    const newMsg = {
+      id: `counter-${Date.now()}`,
+      sender: 'customer',
+      type: 'offer',
+      amount,
+      delivery,
+      revisions: 2,
+      text: `I would like to counter with $${amount} and ${delivery} days delivery.`
     };
     setMessages(prev => [...prev, newMsg]);
     setCustomerOffer(amount);
@@ -376,8 +376,8 @@ export function DealRoom() {
     }
 
     try {
-      await apiClient.post(`/negotiations/${negotiationId}/messages`, { 
-        type: 'offer', amount, delivery, revisions: 2, text: `I counter with $${amount}` 
+      await apiClient.post(`/negotiations/${negotiationId}/messages`, {
+        type: 'offer', amount, delivery, revisions: 2, text: `I counter with $${amount}`
       });
     } catch (err) {
       console.warn("Backend counter sync notice:", err.message);
@@ -426,38 +426,38 @@ export function DealRoom() {
         const targetAi = aiSuggestion || Math.round(baseBudget * 0.85);
 
         if (amt >= targetAi) {
-          reply = { 
-            id: `prov-${Date.now()}`, 
-            sender: 'provider', 
-            text: `I can agree to $${amt}. Let's make this ${activeProject.title} project a great success!`, 
-            type: 'offer', 
-            amount: amt, 
-            delivery: activeProject.deadlineDays || 4, 
-            revisions: 2, 
-            accepted: true 
+          reply = {
+            id: `prov-${Date.now()}`,
+            sender: 'provider',
+            text: `I can agree to $${amt}. Let's make this ${activeProject.title} project a great success!`,
+            type: 'offer',
+            amount: amt,
+            delivery: activeProject.deadlineDays || 4,
+            revisions: 2,
+            accepted: true
           };
           setAgreementReached(true);
           setProviderAsk(amt);
           setCustomerOffer(amt);
           setTimeout(() => generateProposal(amt), 1000);
         } else {
-          reply = { 
-            id: `prov-${Date.now()}`, 
-            sender: 'provider', 
-            type: 'offer', 
-            amount: targetAi, 
-            delivery: activeProject.deadlineDays || 4, 
-            revisions: 2, 
-            text: `I appreciate the $${amt} offer. Taking into account the scope of work and turnaround, $${targetAi} is my fair rate.` 
+          reply = {
+            id: `prov-${Date.now()}`,
+            sender: 'provider',
+            type: 'offer',
+            amount: targetAi,
+            delivery: activeProject.deadlineDays || 4,
+            revisions: 2,
+            text: `I appreciate the $${amt} offer. Taking into account the scope of work and turnaround, $${targetAi} is my fair rate.`
           };
           setProviderAsk(targetAi);
           setTimeout(aiMediateMock, 1400);
         }
       } else {
-        reply = { 
-          id: `prov-${Date.now()}`, 
-          sender: 'provider', 
-          text: `Yes, ${activeProject.deadlineDays || 4} days is plenty of time for ${activeProject.title}. I can deliver high quality work with 2 revisions included.` 
+        reply = {
+          id: `prov-${Date.now()}`,
+          sender: 'provider',
+          text: `Yes, ${activeProject.deadlineDays || 4} days is plenty of time for ${activeProject.title}. I can deliver high quality work with 2 revisions included.`
         };
       }
       setMessages(prev => [...prev, reply]);
@@ -466,24 +466,24 @@ export function DealRoom() {
 
   const aiMediateMock = () => {
     const compromise = Math.round(((customerOffer + providerAsk) / 2) / 5) * 5 || aiSuggestion;
-    const aiMsg = { 
-      id: `ai-${Date.now()}`, 
-      sender: 'ai', 
-      text: `The gap is closing! Market analysis indicates $${compromise} is a fair win-win price for both sides. I recommend locking this in.` 
+    const aiMsg = {
+      id: `ai-${Date.now()}`,
+      sender: 'ai',
+      text: `The gap is closing! Market analysis indicates $${compromise} is a fair win-win price for both sides. I recommend locking this in.`
     };
     setMessages(prev => [...prev, aiMsg]);
     setAiSuggestion(compromise);
   };
 
   const generateProposal = (price = aiSuggestion) => {
-    const aiMsg = { 
-      id: `agreement-${Date.now()}`, 
-      sender: 'system', 
-      type: 'agreement', 
-      project: activeProject.title, 
-      price: price, 
-      delivery: activeProject.deadlineDays || 4, 
-      revisions: 2 
+    const aiMsg = {
+      id: `agreement-${Date.now()}`,
+      sender: 'system',
+      type: 'agreement',
+      project: activeProject.title,
+      price: price,
+      delivery: activeProject.deadlineDays || 4,
+      revisions: 2
     };
     setMessages(prev => {
       // Remove any duplicate agreements
@@ -500,7 +500,7 @@ export function DealRoom() {
 
   return (
     <div className="p-4 md:p-6 max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
-      
+
       {/* Left Column: Scope & Provider */}
       <div className="lg:col-span-3 flex flex-col gap-4 overflow-y-auto hidden lg:flex pr-2">
         <GlassCard className="p-5 flex flex-col gap-4">
@@ -527,10 +527,10 @@ export function DealRoom() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <img 
-              src={activeProvider.avatar} 
-              alt={activeProvider.name} 
-              className="w-12 h-12 rounded-full border border-border-subtle object-cover shadow-sm" 
+            <img
+              src={activeProvider.avatar}
+              alt={activeProvider.name}
+              className="w-12 h-12 rounded-full border border-border-subtle object-cover shadow-sm"
             />
             <div>
               <p className="font-bold text-ink">{user?.role === 'customer' ? activeProvider.name : (user?.name || 'Client')}</p>
@@ -620,16 +620,16 @@ export function DealRoom() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
-                      <Button 
-                        variant="secondary" 
-                        className="flex-1 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2" 
+                      <Button
+                        variant="secondary"
+                        className="flex-1 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2"
                         onClick={() => navigate(`/proposal/${negotiationId || 'demo'}`)}
                       >
                         <FileText className="w-4 h-4" /> View Agreement
                       </Button>
-                      <Button 
-                        variant="ai" 
-                        className="flex-1 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg" 
+                      <Button
+                        variant="ai"
+                        className="flex-1 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg"
                         onClick={() => navigate(`/checkout/${negotiationId || 'demo'}`)}
                       >
                         <span>Proceed to Checkout</span>
@@ -657,19 +657,17 @@ export function DealRoom() {
             return (
               <div key={msg.id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-${isMe ? 'right' : 'left'}-4`}>
                 <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
-                  
+
                   {msg.text && (
-                    <div className={`px-4 py-2.5 rounded-2xl text-sm ${
-                      isMe ? 'bg-accent text-white rounded-br-sm shadow-sm' : 'bg-surface border border-border-subtle text-ink rounded-bl-sm shadow-sm'
-                    }`}>
+                    <div className={`px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-accent text-white rounded-br-sm shadow-sm' : 'bg-surface border border-border-subtle text-ink rounded-bl-sm shadow-sm'
+                      }`}>
                       {msg.text}
                     </div>
                   )}
 
                   {msg.type === 'offer' && (
-                    <div className={`mt-2 p-4 rounded-xl border ${
-                      isMe ? 'bg-surface border-accent/30 shadow-md' : 'bg-surface border-border-subtle shadow-md'
-                    } w-68 sm:w-72`}>
+                    <div className={`mt-2 p-4 rounded-xl border ${isMe ? 'bg-surface border-accent/30 shadow-md' : 'bg-surface border-border-subtle shadow-md'
+                      } w-68 sm:w-72`}>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted">
                           {isMe ? 'Your Offer' : `${activeProvider.name}'s Offer`}
@@ -680,9 +678,9 @@ export function DealRoom() {
                           <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
                         )}
                       </div>
-                      
+
                       <div className="font-mono text-3xl font-bold text-ink mb-2">${msg.amount}</div>
-                      
+
                       <div className="flex justify-between text-xs text-muted mb-3 border-t border-border-subtle pt-2.5">
                         <span>{msg.delivery} Days Delivery</span>
                         <span>{msg.revisions} Revisions</span>
@@ -694,10 +692,10 @@ export function DealRoom() {
                           <Button size="sm" variant="primary" className="flex-1 font-semibold" onClick={() => handleAccept(msg)}>
                             Accept ${msg.amount}
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="secondary" 
-                            className="flex-1 font-semibold hover:border-accent hover:text-accent" 
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="flex-1 font-semibold hover:border-accent hover:text-accent"
                             onClick={() => handleOpenCounter(msg)}
                           >
                             Counter
@@ -712,8 +710,8 @@ export function DealRoom() {
                             <span className="text-xs font-bold text-accent flex items-center gap-1">
                               <Sparkles className="w-3 h-3" /> Counter Offer
                             </span>
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => setCounteringOfferId(null)}
                               className="text-muted hover:text-ink text-xs p-1"
                               title="Cancel counter"
@@ -726,16 +724,16 @@ export function DealRoom() {
                             <div className="flex-1">
                               <span className="text-[10px] text-muted block mb-1">Your Price</span>
                               <div className="flex items-center gap-1">
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   onClick={() => setCounterAmount(prev => Math.max(50, prev - 5))}
                                   className="w-7 h-7 rounded-md bg-surface border border-border-subtle font-bold text-xs hover:border-accent active:scale-95"
                                 >-</button>
                                 <div className="font-mono font-bold text-base text-ink w-14 text-center">
                                   ${counterAmount}
                                 </div>
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   onClick={() => setCounterAmount(prev => prev + 5)}
                                   className="w-7 h-7 rounded-md bg-surface border border-border-subtle font-bold text-xs hover:border-accent active:scale-95"
                                 >+</button>
@@ -745,16 +743,16 @@ export function DealRoom() {
                             <div>
                               <span className="text-[10px] text-muted block mb-1">Days</span>
                               <div className="flex items-center gap-1">
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   onClick={() => setCounterDays(prev => Math.max(1, prev - 1))}
                                   className="w-7 h-7 rounded-md bg-surface border border-border-subtle font-bold text-xs hover:border-accent active:scale-95"
                                 >-</button>
                                 <span className="font-mono font-bold text-sm text-ink w-8 text-center">
                                   {counterDays}d
                                 </span>
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   onClick={() => setCounterDays(prev => prev + 1)}
                                   className="w-7 h-7 rounded-md bg-surface border border-border-subtle font-bold text-xs hover:border-accent active:scale-95"
                                 >+</button>
@@ -769,20 +767,19 @@ export function DealRoom() {
                                 key={idx}
                                 type="button"
                                 onClick={() => setCounterAmount(amt)}
-                                className={`flex-1 py-1 text-[11px] font-mono rounded border transition-all ${
-                                  counterAmount === amt 
-                                    ? 'bg-accent text-white border-accent font-bold' 
+                                className={`flex-1 py-1 text-[11px] font-mono rounded border transition-all ${counterAmount === amt
+                                    ? 'bg-accent text-white border-accent font-bold'
                                     : 'bg-surface border-border-subtle text-muted hover:text-ink'
-                                }`}
+                                  }`}
                               >
                                 ${amt}
                               </button>
                             ))}
                           </div>
 
-                          <Button 
-                            size="sm" 
-                            variant="primary" 
+                          <Button
+                            size="sm"
+                            variant="primary"
                             className="w-full mt-1 text-xs font-bold"
                             onClick={handleSendCounterOffer}
                           >
@@ -798,7 +795,7 @@ export function DealRoom() {
               </div>
             );
           })}
-          
+
           {isAiTyping && (
             <div className="flex items-center gap-2 text-muted text-sm my-2">
               <div className="flex gap-1">
@@ -817,33 +814,33 @@ export function DealRoom() {
           <div className="p-4 border-t border-border-subtle bg-background/50 backdrop-blur">
             {(!user || user?.role === 'customer') && (
               <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
-                <button 
+                <button
                   type="button"
-                  onClick={() => handleQuickOffer(quick75)} 
+                  onClick={() => handleQuickOffer(quick75)}
                   className="shrink-0 px-3.5 py-1.5 bg-surface border border-border-subtle rounded-full text-xs font-mono font-semibold text-ink hover:border-accent hover:text-accent hover:bg-accent/10 transition-all cursor-pointer shadow-sm active:scale-95"
                 >
                   ${quick75} Offer
                 </button>
-                <button 
+                <button
                   type="button"
-                  onClick={() => handleQuickOffer(quick80)} 
+                  onClick={() => handleQuickOffer(quick80)}
                   className="shrink-0 px-3.5 py-1.5 bg-surface border border-border-subtle rounded-full text-xs font-mono font-semibold text-ink hover:border-accent hover:text-accent hover:bg-accent/10 transition-all cursor-pointer shadow-sm active:scale-95"
                 >
                   ${quick80} Offer
                 </button>
-                <button 
+                <button
                   type="button"
-                  onClick={() => handleQuickOffer(quickAI)} 
+                  onClick={() => handleQuickOffer(quickAI)}
                   className="shrink-0 px-3.5 py-1.5 bg-ai-violet/10 border border-ai-violet/30 rounded-full text-xs font-mono font-bold text-ai-violet hover:bg-ai-violet hover:text-white transition-all cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
                 >
                   <Sparkles className="w-3.5 h-3.5" /> ${quickAI} Match AI
                 </button>
               </div>
             )}
-            
+
             <div className="flex gap-2">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSend()}
@@ -861,7 +858,7 @@ export function DealRoom() {
       {/* Right Column: Live Meter */}
       <div className="lg:col-span-3 hidden lg:flex flex-col gap-4 overflow-y-auto pr-2">
         <GlassCard glow className="p-5 flex flex-col gap-4 sticky top-0">
-          <DealMeter 
+          <DealMeter
             customerOffer={customerOffer}
             providerAsk={providerAsk}
             aiSuggestion={aiSuggestion}
@@ -875,7 +872,7 @@ export function DealRoom() {
             <Shield className="w-4 h-4" /> Secure Escrow
           </h3>
           <p className="text-xs text-muted leading-relaxed">
-            Funds will be held in a secure PayPal Smart Escrow vault until you approve the final delivery. 
+            Funds will be held in a secure PayPal Smart Escrow vault until you approve the final delivery.
           </p>
         </GlassCard>
       </div>
